@@ -34,7 +34,7 @@ IMPORTANT NOTE: Rectangular, color-based, and group key selectors compound with 
         '''Returns a list of voxels that match the specified conditions, or all of them if no
 parameters have been set.'''
         affected = []
-        x, y, z, color, key = False, False, False, False, False
+        x, y, z, color, key = True, True, True, True, True
         x_bound = selectors['x_bound'] if 'x_bound' in selectors else None
         y_bound = selectors['y_bound'] if 'y_bound' in selectors else None
         z_bound = selectors['z_bound'] if 'z_bound' in selectors else None
@@ -43,81 +43,49 @@ parameters have been set.'''
         for voxel in self.contents['voxels']:
             if x_bound:
                 if type(x_bound) == int:
-                    if x_bound == voxel['x']:
-                        x = True
-                    else:
+                    if x_bound != voxel['x']:
                         x = False
                 else:
-                    if x_bound[0] <= voxel['x'] <= x_bound[1]:
-                        x = True
-                    else:
+                    if not (x_bound[0] <= voxel['x'] <= x_bound[1]):
                         x = False
-            else:
-                x = True
             if y_bound:
                 if type(y_bound) == int:
-                    if y_bound == voxel['y']:
-                        y = True
-                    else:
+                    if y_bound != voxel['y']:
                         y = False
                 else:
-                    if y_bound[0] <= voxel['y'] <= y_bound[1]:
-                        y = True
-                    else:
+                    if not(y_bound[0] <= voxel['y'] <= y_bound[1]):
                         y = False
-            else:
-                y = True
             if z_bound:
                 if type(z_bound) == int:
                     if z_bound == voxel['z']:
-                        z = True
-                    else:
                         z = False
                 else:
-                    if z_bound[0] <= voxel['z'] <= z_bound[1]:
-                        z = True
-                    else:
+                    if not (z_bound[0] <= voxel['z'] <= z_bound[1]):
                         z = False
-            else:
-                z = True
             if colorkey:
                 if type(colorkey) == str:
-                    if voxel['c'].upper() == colorkey.upper():
-                        color = True
-                    else:
+                    if voxel['c'].upper() != colorkey.upper():
                         color = False
                 else:
-                    if voxel['c'].upper() in [c.upper() for c in colorkey]:
-                        color = True
-                    else:
+                    if voxel['c'].upper() not in [c.upper() for c in colorkey]:
                         color = False
-            else:
-                color = True
             if groupkey:
                 if type(groupkey) == str:
                     try:
-                        if voxel['group'] == groupkey:
-                            key = True
-                        else:
+                        if voxel['group'] != groupkey:
                             key = False
                     except KeyError:
                         key = False
                 else:
                     try:
-                        if voxel['group'] in groupkey:
-                            key = True
-                        else:
+                        if voxel['group'] not in groupkey:
                             key = False
                     except KeyError:
                         key = False
-            else:
-                key = True
             if x and y and z and color and key:
                 affected.append(voxel)
         addtl = selectors['voxels'] if 'voxels' in selectors else []
-        for item in addtl:
-            if item not in affected:
-                affected.append(item)
+        affected += [item for item in addtl if item not in affected]
         return affected
     @selection_info
     def resize(self, resizeTo):
@@ -211,4 +179,4 @@ copy in case something goes wrong.'''
     def __repr__(self):
         return str(self)
     def __str__(self):
-        return str(self.contents)
+        return str(f'{self.filename}: self.contents')

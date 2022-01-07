@@ -115,15 +115,18 @@ parameters have been set.'''
         '''Does NOT transform the size of the model itself, but resizes the model's building frame.'''
         self.contents['size'] = resizeTo
     
-    def recolor(self, selection, colormap):
-        '''Change all colors in the affected area according to the colormap parameter.
-The colormap should be a dict with the keys as the original colors and the values as the
-new colors you want to set them to. Colors are case insensitive.'''
+    def recolor(self, selection, colormap, opacitymap, metallicmap):
+        '''Change all colors and/or voxel effects in the affected area according to the colormap parameter.
+All maps should be a dict with the keys as the original colors, opacities, etc. and the values as the
+new colors/opacity values you want to set them to. Everything is case insensitive and each colormap is applied
+independently of the others.'''
         for item in colormap:
             colormap[item] = colormap[item].upper()
         for voxel in selection:
             try:
                 voxel['c'] = colormap[voxel['c'].upper()]
+                voxel['op'] = colormap[voxel['op']]
+                voxel['me'] = colormap[voxel['me']]
             except KeyError:
                 pass
     

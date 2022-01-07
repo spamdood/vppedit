@@ -136,6 +136,10 @@ new colors you want to set them to. Colors are case insensitive.'''
                 voxel['c'] = colormap[voxel['c'].upper()]
             except KeyError:
                 pass
+    @selection_info(self):
+    def rotate(self):
+        '''WORK IN PROGRESS HERE'''
+        ...
     @selection_info
     def reflect(self, x=False, y=False, z=False, **selectors):
         '''Reflect the selected area along the X, Y, and/or Z axes. Set X, Y, or Z to 1 to flip that axis.'''
@@ -180,17 +184,20 @@ new colors you want to set them to. Colors are case insensitive.'''
     def remove(self, **selectors):
         '''Erase all voxels in the selection. Remember when you spent five hours working on an extensively
 detailed model, and then ruined it just before it was finished by accidentally paint filling
-a massive rectangle? Well, this is for you.'''
+a massive rectangle? No? Well, this is for you anyways.'''
         affected = self.select(**selectors)
         for voxel in affected:
             self.contents['voxels'].remove(voxel)
     @selection_info
-    def clone(self, **selectors):
-        '''Creates a copy of the selection and returns a list of the copied voxels.'''
+    def clone(self, copy_group, **selectors):
+        '''Creates a copy of the selection and returns a list of the copied voxels. copy_group (T/F) determines
+ whether or not the selection's group name(s) will also be copied.'''
         affected = self.select(**selectors)
         cloned = []
         for voxel in affected:
             coxel = dict(voxel)
+            if copy_group:
+                coxel.pop('group', None)
             cloned.append(coxel)
             self.contents['voxels'].append(coxel)
         return cloned

@@ -205,7 +205,3 @@ copy in case something goes wrong.'''
         return str(self)
     def __str__(self):
         return str(self.contents)
-
-e = VPPEditor('crewmate.vpp')
-e.reflect(0, 1, 1, colorkey='#75dbf4')
-e.push()

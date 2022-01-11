@@ -20,9 +20,9 @@ z_bound: iterable[int, int] OR int -> An iterable of two ints (ascending order) 
 
 Color-based selection:
 colorkey: iterable[strings] OR string -> An iterable of hexadecimal color strings or an individual color string (prefixed with #) to filter voxels with. Color strings are case-insensitive.
-opacity:  iterable[float, float] OR float -> An iterable of floats or a single float (between 0 and 1) to further filter voxels with based on their opacity.
+opacity:  iterable[int, int] OR float -> An iterable of ints or a single int (between 0 and 100 inclusive) to further filter voxels with based on their opacity.
 metallic: bool -> Can be True of False; filters voxels in the selection based on whether they are metallic or not
-emissive: iterable[float, float] OR float OR bool -> An iterable of floats or a single float or False to filter voxels based on whether or not they emit light, and if so, how much light they emit.
+emissive: iterable[int, int] OR float OR bool -> An iterable of ints or a single ints or False to filter voxels based on whether or not they emit light, and if so, how much light they emit.
 
 *emissive selection has not been implemented yet*
 
@@ -103,8 +103,7 @@ parameters have been set.'''
                 if metallic != voxel['me']:
                     metal = False
             if luminous != None:
-                #raise NotImplementedError('Emissive-based selection doesn\'t save to files yet.')
-                ...
+                pass
             if x and y and z and color and key and opac and metal and luminous:
                 affected.append(voxel)
         addtl = selectors['voxels'] if 'voxels' in selectors else []
@@ -115,27 +114,82 @@ parameters have been set.'''
         '''Does NOT transform the size of the model itself, but resizes the model's building frame.'''
         self.contents['size'] = resizeTo
     
-    def recolor(self, selection, colormap, opacitymap, metallicmap):
-        '''Change all colors and/or voxel effects in the affected area according to the colormap parameter.
-All maps should be a dict with the keys as the original colors, opacities, etc. and the values as the
-new colors/opacity values you want to set them to. Everything is case insensitive and each colormap is applied
-independently of the others.'''
-        for item in colormap:
-            colormap[item] = colormap[item].upper()
+    def recolor(self, selection, **valuemaps):
+        '''Change voxel appearances in the affected area based on valuemaps dicts.
+The color, opacity (transparency), and metallic effect of voxels can be recolored,
+though metallicity can only be true or false. The format of each dict should be
+old_value_string: new_value string for each attribute to remap.'''
+        ncm = {}
+        if 'colormap' in valuemaps:
+            for item in valuemaps['colormap']:
+                ncm[item.upper()] = colormap[item].upper()
+        if 'opacitymap' in valuemaps:
+            opacitymap = valuemaps['opacitymap']
+        else:
+            opacitymap = {}
+        if 'metallicmap' in valuemaps:
+            metallicmap = valuemaps['metallicmap']
+        else:
+            metallicmap = {}
         for voxel in selection:
             try:
-                voxel['c'] = colormap[voxel['c'].upper()]
-                voxel['op'] = colormap[voxel['op']]
-                voxel['me'] = colormap[voxel['me']]
+                voxel['c'] = ncm[voxel['c'].upper()]
+                voxel['op'] = opacitymap[voxel['op']]
+                voxel['me'] = metallicmap[voxel['me']]
             except KeyError:
                 pass
     
-    def rotate(self):
-        '''WORK IN PROGRESS HERE'''
-        ...
-    
+    def rotate(self, selection, center='FILL', xd=0, yd=0, zd=0):
+        '''Rotate a selection of voxels in 90-degree increments on all three planes.
+Center specifies the center of rotation, with the default 'FILL' setting the corners of rotation
+as the corners of the rectangular area the selection fills. Otherwise, corners can be set
+to a 3-int list representing the 3D coordinates of the center of rotation.
+
+XD rotates the selection on the X-Y plane (side to side), YD rotates the selection
+on the Y-Z plane (backwards and forwards), and ZD rotates the selection on the X-Z
+plane (side to side but vertical.)'''
+        if selection == 'all':
+            selection = self.contents['voxels']
+        if center == 'FILL':
+            corners = [[], []]
+            corners[0] = [min([item['x'] for item in selection]), min([item['y'] for item in selection]), min([item['z'] for item in selection])]
+            corners[1] = [max([item['x'] for item in selection]), max([item['y'] for item in selection]), max([item['z'] for item in selection])]
+            center = [(corners[0][0] + corners[1][0])/2, (corners[0][1] + corners[1][1])/2, (corners[0][2] + corners[1][2])/2]
+        if xd != 0:
+            xd %= 360
+            for voxel in selection:
+                dx, dy = center[0] - voxel['x'], center[1] - voxel['y']
+                if xd == 270:
+                    voxel['x'], voxel['y'] = center[1] - dy, center[0] + dx
+                elif xd == 180:
+                    voxel['x'], voxel['y'] = center[0] + dx, center[1] + dy
+                elif xd == 90:
+                    voxel['x'], voxel['y'] = center[1] + dy, center[0] - dx
+        if yd != 0:
+            yd %= 360
+            for voxel in selection:
+                dy, dz = center[1] - voxel['y'], center[2] - voxel['z']
+                if yd == 270:
+                    voxel['y'], voxel['z'] = center[2] - dz, center[1] + dy
+                elif yd == 180:
+                    voxel['y'], voxel['z'] = center[1] + dy, center[2] + dz
+                elif yd == 90:
+                    voxel['y'], voxel['z'] = center[2] + dz, center[0] - dy
+        if zd != 0:
+            zd %= 360
+            for voxel in selection:
+                dx, dz = center[0] - voxel['x'], center[2] - voxel['z']
+                if zd == 270:
+                    voxel['x'], voxel['z'] = center[2] - dz, center[0] + dx
+                elif zd == 180:
+                    voxel['x'], voxel['z'] = center[0] + dx, center[2] + dz
+                elif zd == 90:
+                    voxel['x'], voxel['z'] = center[2] + dz, center[0] - dx
+        
     def reflect(self, selection, x=False, y=False, z=False):
-        '''Reflect the selected area along the X, Y, and/or Z axes. Set X, Y, or Z to 1 to flip that axis.'''
+        '''Reflect the selected area along the X, Y, and Z axes, or across an arbitrary point.
+To reflect the selected area on itself, set X, Y, or Z to True.
+To reflect across a certain point, set X, Y, or Z to an integer.'''
         if selection == 'all':
             selection = self.contents['voxels']
         sx = [d['x'] for d in selection]
@@ -145,15 +199,24 @@ independently of the others.'''
         sz = [d['z'] for d in selection]
         zmin, zmax = min(sz), max(sz)
         for voxel in selection:
-            if x == 1:
-                add = xmax - voxel['x']
-                voxel['x'] = xmin + add
-            if y == 1:
-                add = ymax - voxel['y']
-                voxel['y'] = ymin + add
-            if z == 1:
-                add = zmax - voxel['z']
-                voxel['z'] = zmin + add
+            if x:
+                if x == True:
+                    add = xmax - voxel['x']
+                    voxel['x'] = xmin + add
+                else:
+                    voxel['x'] = 2 * x - voxel['x']
+            if y:
+                if y == True:
+                    add = ymax - voxel['y']
+                    voxel['y'] = ymin + add
+                else:
+                    voxel['y'] = 2 * y - voxel['y']
+            if z:
+                if z == True:
+                    add = zmax - voxel['z']
+                    voxel['z'] = zmin + add
+                else:
+                    voxel['z'] = 2 * z - voxel['z']
 
     def group(self, selection, groupname):
         '''Assign the selected voxels to a group. This function overwrites previous group names.'''
@@ -178,6 +241,10 @@ independently of the others.'''
             voxel['y'] += y_inc
             voxel['z'] += z_inc
 
+    def transform(self, selection, x_inc, y_inc, z_inc):
+        '''see VPPEditor.translate'''
+        self.translate(selection, x_inc, y_inc, z_inc)
+
     def remove(self, selection):
         '''Erase all voxels in the selection. Remember when you spent five hours working on an extensively
 detailed model, and then ruined it just before it was finished by accidentally paint filling
@@ -195,11 +262,38 @@ a massive rectangle? No? Well, this is for you anyways.'''
         cloned = []
         for voxel in selection:
             coxel = dict(voxel)
-            if copy_group:
+            if not copy_group:
                 coxel.pop('group', None)
             cloned.append(coxel)
             self.contents['voxels'].append(coxel)
         return cloned
+
+    def paint(self, corners, **appearance):
+        '''Fill all empty spaces between each corner (inclusive) with voxels. Acceptable values for appearance are
+"color" -> hex string, opacity -> int between 0 and 100 inclusive, and metallic -> True or False. Corners should be a list
+of 2 3-length sublists representing the X, Y, and Z values of each (opposite) corner.'''
+        if 'color' in appearance:
+            color = appearance['color']
+        else:
+            raise TypeError('A color must be specified for the voxels.')
+        if 'opacity' in appearance:
+            opc = appearance['opacity']
+        else:
+            opc = 100
+        if 'metallic' in appearance:
+            met = appearance['metallic']
+        else:
+            met = False
+        for x in range(corners[0][0], corners[1][0] + 1):
+            for y in range(corners[0][1], corners[1][1] + 1):
+                for z in range(corners[0][2], corners[1][2] + 1):
+                    vac = False
+                    for voxel in self.contents['voxels']:
+                        if voxel['x'] == x and voxel['y'] == y and voxel['z'] == z:
+                            vac = True
+                    if vac == False:
+                        template = {"x": x, "y": y, "z": z, "c": color, "me": met, "op": opc, "es": False}
+                        self.contents['voxels'].append(template)
 
     def push(self):
         '''Push changes from the editor version of the model to the VPP file itself. Changes are irreversible, so make sure to have a backup

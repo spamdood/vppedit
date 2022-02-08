@@ -1,3 +1,4 @@
+
 import json
 
 #Written by spamdude, 2021
@@ -10,28 +11,21 @@ class VPPEditor():
         
     def selection_info(func):
         func.__doc__ += '''
-
 selectors (kwargs) guide:
-
 Rectangular (dimensional) selection:
 x_bound: iterable[int, int] OR int -> An iterable of two ints (ascending order) or a single int to filter out voxels using their X coordinate.
 y_bound: iterable[int, int] OR int -> An iterable of two ints (ascending order) or a single int to filter out voxels using their Y coordinate.
 z_bound: iterable[int, int] OR int -> An iterable of two ints (ascending order) or a single int to filter out voxels using their Z coordinate.
-
 Color-based selection:
 colorkey: iterable[strings] OR string -> An iterable of hexadecimal color strings or an individual color string (prefixed with #) to filter voxels with. Color strings are case-insensitive.
 opacity:  iterable[int, int] OR float -> An iterable of ints or a single int (between 0 and 100 inclusive) to further filter voxels with based on their opacity.
 metallic: bool -> Can be True of False; filters voxels in the selection based on whether they are metallic or not
 emissive: iterable[int, int] OR float OR bool -> An iterable of ints or a single ints or False to filter voxels based on whether or not they emit light, and if so, how much light they emit.
-
 *emissive selection has not been implemented yet*
-
 Group key selection:
 groupkey: iterable[strings] OR string -> An iterable of group name strings or an individual group name string to filter voxels with. Default voxels have no group tag, which can be set or erased using the "group" and "ungroup" methods and persist indefinitely.
-
 Previous selection:
 voxels: iterable[dicts] -> An iterable of voxel dict objects to process instead of (or including) other selectors.
-
 IMPORTANT NOTE: Rectangular, color-based, and group key selectors compound with each other, while previous selection is not subject to these.
 '''
         return func
@@ -122,7 +116,7 @@ old_value_string: new_value string for each attribute to remap.'''
         ncm = {}
         if 'colormap' in valuemaps:
             for item in valuemaps['colormap']:
-                ncm[item.upper()] = colormap[item].upper()
+                ncm[item.upper()] = valuemaps['colormap'][item].upper()
         if 'opacitymap' in valuemaps:
             opacitymap = valuemaps['opacitymap']
         else:
@@ -144,7 +138,6 @@ old_value_string: new_value string for each attribute to remap.'''
 Center specifies the center of rotation, with the default 'FILL' setting the corners of rotation
 as the corners of the rectangular area the selection fills. Otherwise, corners can be set
 to a 3-int list representing the 3D coordinates of the center of rotation.
-
 XD rotates the selection on the X-Y plane (side to side), YD rotates the selection
 on the Y-Z plane (backwards and forwards), and ZD rotates the selection on the X-Z
 plane (side to side but vertical.)'''
